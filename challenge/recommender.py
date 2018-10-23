@@ -55,7 +55,7 @@ print(track_list_unique[0:10])
 URM_all = sps.coo_matrix((rating_list, (playlist_list, track_list)))
 URM_all.tocsr()
 
-train_test_split = 0.97
+train_test_split = 0.8
 numInteractions = URM_all.nnz
 playlist_list = np.array(playlist_list)
 track_list = np.array(track_list)

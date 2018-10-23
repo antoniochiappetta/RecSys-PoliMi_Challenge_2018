@@ -164,9 +164,9 @@ class ItemCBFKNNRecommender(object):
         self.W_sparse_album = similarity_object_album.compute_similarity()
         self.W_sparse_artist = similarity_object_artist.compute_similarity()
         self.W_sparse_duration = similarity_object_duration.compute_similarity()
-        self.W_sparse = self.W_sparse_album * 0.3 + self.W_sparse_artist * 0.65 + self.W_sparse_duration * 0.05
+        self.W_sparse = self.W_sparse_album * 0.2 + self.W_sparse_artist * 0.8 + self.W_sparse_duration * 0.0
 
-    def recommend(self, playlist_id, at=None, exclude_duplicates=True):
+    def recommend(self, playlist_id, at=10, exclude_duplicates=True):
         # compute the scores using the dot product
         playlist_profile = self.URM[playlist_id]
         scores = playlist_profile.dot(self.W_sparse).toarray().ravel()

@@ -17,7 +17,7 @@ from code.challenge.support_files.compute_similarity import Compute_Similarity_P
 
 print("MARK: - Load interaction data")
 
-URM_path = "../input data and submission/train.csv"
+URM_path = "../input/train.csv"
 URM_file = open(URM_path, 'r')
 URM_file.seek(0)
 numberInteractions = 0
@@ -79,7 +79,7 @@ print(len(URM_test.indices))
 
 print("MARK: - Load Content Data")
 
-ICM_path = "../input data and submission/tracks.csv"
+ICM_path = "../input/tracks.csv"
 ICM_file = open(ICM_path, 'r')
 ICM_file.seek(0)
 
@@ -191,14 +191,14 @@ class ItemCBFKNNRecommender(object):
 # MARK: - Train and evaluate algorithm
 
 cbfrecommender = ItemCBFKNNRecommender(URM_train, ICM_album, ICM_artist, ICM_duration)
-cbfrecommender.fit(shrink=0.0, topK=50)
+cbfrecommender.fit()
 evaluate_algorithm(URM_test, cbfrecommender)
 
 # Let's generate recommendations for the target playlists
 
 print("Generating recommendations...")
 
-target_playlist_path = "../input data and submission/target_playlists.csv"
+target_playlist_path = "../input/target_playlists.csv"
 target_playlist_file = open(target_playlist_path, 'r')
 target_playlist_file.seek(0)
 target_playlist_tuples = []
@@ -219,7 +219,7 @@ def get_description_from_recommendation(tuple):
     return "{},{}\n".format(playlist_string, tracks_string)
 
 
-submission_path = "../input data and submission/submission.csv"
+submission_path = "../input/submission.csv"
 submission_file = open(submission_path, 'w')
 submission_file.write("playlist_id,track_ids\n")
 for recommendation in target_playlist_tuples:

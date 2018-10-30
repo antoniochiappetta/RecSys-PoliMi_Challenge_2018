@@ -11,8 +11,11 @@ sys.path.insert(0, 'code/challenge/support_files')
 
 from code.challenge.support_files.evaluate_function import evaluate_algorithm
 from code.challenge.support_files.data_splitter import train_test_holdout
+from code.challenge.support_files.compute_similarity import Compute_Similarity_Python
 
-# IMPORT DATA AND SPLIT IN TRAIN AND TEST SET
+# LOAD INTERACTION DATA
+
+print("MARK: - Load interaction data")
 
 URM_path = "../input/train.csv"
 URM_file = open(URM_path, 'r')
@@ -24,7 +27,8 @@ for _ in URM_file:
 
 print("The number of interactions is {}".format(numberInteractions))
 
-def rowSplit(rowString):
+
+def rowSplitTrain(rowString):
     split = rowString.split(",")
     split[1] = split[1].replace("\n", "")
     split.append(1)
@@ -43,7 +47,7 @@ URM_file.seek(0)
 URM_tuples = []
 
 for line in URM_file:
-    URM_tuples.append(rowSplit(line))
+    URM_tuples.append(rowSplitTrain(line))
 
 print(URM_tuples[1:10])
 
@@ -72,28 +76,49 @@ print(len(URM_train.indices))
 print("URM_test len")
 print(len(URM_test.indices))
 
-class TopPopRecommender(object):
 
-    def fit(self, URM_train):
-        itemPopularity = (URM_train > 0).sum(axis=0)
-        itemPopularity = np.array(itemPopularity).squeeze()
+# MARK: - Recommender
 
-        # We are not interested in sorting the popularity value,
-        # but to order the items according to it
-        self.popularItems = np.argsort(itemPopularity)
-        self.popularItems = np.flip(self.popularItems, axis=0)
+class ItemCFKNNRecommender(object):
 
-    def recommend(self, user_id, at=10):
-        recommended_items = self.popularItems[0:at]
+    def __init__(self, URM, URM_all):
+        self.URM = URM
+        self.URM_all = URM_all
 
-        return recommended_items
+    def fit(self, topK=50, shrink=100, normalize=True, similarity="cosine"):
+        similarity_object_track = Compute_Similarity_Python(self.URM_all, shrink=shrink, topK=topK, normalize=normalize,
+                                                            similarity=similarity)
 
-# Evaluate algorithm
+        self.W_sparse = similarity_object_track.compute_similarity()
 
-print("-- Top Pop Recommender --")
-topPopRecommender = TopPopRecommender()
-topPopRecommender.fit(URM_train)
-evaluate_algorithm(URM_test, topPopRecommender)
+    def recommend(self, playlist_id, at=10, exclude_duplicates=True):
+        # compute the scores using the dot product
+        playlist_profile = self.URM[playlist_id]
+        scores = playlist_profile.dot(self.W_sparse).toarray().ravel()
+        if exclude_duplicates:
+            scores = self.filter_seen(playlist_id, scores)
+
+        # rank items
+        ranking = scores.argsort()[::-1]
+
+        return ranking[:at]
+
+    def filter_seen(self, playlist_id, scores):
+        start_pos = self.URM.indptr[playlist_id]
+        end_pos = self.URM.indptr[playlist_id + 1]
+
+        playlist_profile = self.URM.indices[start_pos:end_pos]
+
+        scores[playlist_profile] = -np.inf
+
+        return scores
+
+
+# MARK: - Train and evaluate algorithm
+
+cbfrecommender = ItemCFKNNRecommender(URM_train, URM_all)
+cbfrecommender.fit(shrink=10, topK=200)
+evaluate_algorithm(URM_test, cbfrecommender)
 
 # Let's generate recommendations for the target playlists
 
@@ -109,7 +134,7 @@ for line in target_playlist_file:
     line = line.replace("\n", "")
     try:
         playlist_id = int(line)
-        target_playlist_tuples.append((playlist_id, list(topPopRecommender.recommend(playlist_id))))
+        target_playlist_tuples.append((playlist_id, list(cbfrecommender.recommend(playlist_id))))
     except ValueError:
         pass
 
@@ -120,7 +145,7 @@ def get_description_from_recommendation(tuple):
     return "{},{}\n".format(playlist_string, tracks_string)
 
 
-submission_path = "../input/submission.csv"
+submission_path = "submission.csv"
 submission_file = open(submission_path, 'w')
 submission_file.write("playlist_id,track_ids\n")
 for recommendation in target_playlist_tuples:
@@ -128,7 +153,3 @@ for recommendation in target_playlist_tuples:
     numberOfTargets += 1
 submission_file.close()
 print(numberOfTargets)
-
-
-
-

@@ -10,11 +10,8 @@ import sys
 sys.path.insert(0, 'code/challenge/support_files')
 
 from code_recsys.challenge.support_files.evaluate_function import evaluate_algorithm
-from code_recsys.challenge.support_files.data_splitter import train_test_holdout
 from code_recsys.challenge.support_files.data_splitter import train_test_holdout_adjusted
 from code_recsys.challenge.support_files.compute_similarity import Compute_Similarity_Python
-
-# LOAD INTERACTION DATA
 
 print("MARK: - Load interaction data")
 
@@ -117,9 +114,12 @@ class ItemCFKNNRecommender(object):
 
 # MARK: - Train and evaluate algorithm
 
-icfRecommender = ItemCFKNNRecommender(URM_train, URM_all)
-icfRecommender.fit(shrink=10, topK=15)
-evaluate_algorithm(URM_test, icfRecommender, at=10)
+icfrecommendertest = ItemCFKNNRecommender(URM_train, URM_all)
+icfrecommendertest.fit(shrink=2,topK=100)
+evaluate_algorithm(URM_test, icfrecommendertest, at=10)
+
+icfrecommender = ItemCFKNNRecommender(URM_all, URM_all)
+icfrecommender.fit(shrink=2,topK=100)
 
 # Let's generate recommendations for the target playlists
 
@@ -135,7 +135,7 @@ for line in target_playlist_file:
     line = line.replace("\n", "")
     try:
         playlist_id = int(line)
-        target_playlist_tuples.append((playlist_id, list(icfRecommender.recommend(playlist_id))))
+        target_playlist_tuples.append((playlist_id, list(icfrecommender.recommend(playlist_id))))
     except ValueError:
         pass
 

@@ -118,7 +118,7 @@ icfrecommendertest = ItemCFKNNRecommender(URM_train, URM_all)
 icfrecommendertest.fit(shrink=2,topK=100)
 evaluate_algorithm(URM_test, icfrecommendertest, at=10)
 
-icfrecommender = ItemCFKNNRecommender(URM_all, URM_all)
+icfrecommender = ItemCFKNNRecommender(URM_test, URM_all)
 icfrecommender.fit(shrink=2,topK=100)
 
 # Let's generate recommendations for the target playlists

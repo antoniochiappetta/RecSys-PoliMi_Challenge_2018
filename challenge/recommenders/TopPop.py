@@ -9,8 +9,8 @@ import scipy.sparse as sps
 import sys
 sys.path.insert(0, 'code/challenge/support_files')
 
-from code.challenge.support_files.evaluate_function import evaluate_algorithm
-from code.challenge.support_files.data_splitter import train_test_holdout
+from code_recsys.challenge.support_files.evaluate_function import evaluate_algorithm
+from code_recsys.challenge.support_files.data_splitter import train_test_holdout
 
 # IMPORT DATA AND SPLIT IN TRAIN AND TEST SET
 

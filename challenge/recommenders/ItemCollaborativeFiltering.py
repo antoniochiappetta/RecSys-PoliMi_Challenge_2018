@@ -9,9 +9,10 @@ import scipy.sparse as sps
 import sys
 sys.path.insert(0, 'code/challenge/support_files')
 
-from code.challenge.support_files.evaluate_function import evaluate_algorithm
-from code.challenge.support_files.data_splitter import train_test_holdout
-from code.challenge.support_files.compute_similarity import Compute_Similarity_Python
+from code_recsys.challenge.support_files.evaluate_function import evaluate_algorithm
+from code_recsys.challenge.support_files.data_splitter import train_test_holdout
+from code_recsys.challenge.support_files.data_splitter import train_test_holdout_adjusted
+from code_recsys.challenge.support_files.compute_similarity import Compute_Similarity_Python
 
 # LOAD INTERACTION DATA
 
@@ -68,7 +69,7 @@ print(playlist_list_unique[0:10])
 print(track_list_unique[0:10])
 
 URM_all = sps.coo_matrix((rating_list, (playlist_list, track_list)))
-URM_train, URM_test = train_test_holdout(URM_all)
+URM_train, URM_test = train_test_holdout_adjusted(URM_all)
 
 print("URM_train len")
 print(len(URM_train.indices))
@@ -116,9 +117,9 @@ class ItemCFKNNRecommender(object):
 
 # MARK: - Train and evaluate algorithm
 
-cbfrecommender = ItemCFKNNRecommender(URM_train, URM_all)
-cbfrecommender.fit(shrink=10, topK=200)
-evaluate_algorithm(URM_test, cbfrecommender)
+icfRecommender = ItemCFKNNRecommender(URM_train, URM_all)
+icfRecommender.fit(shrink=10, topK=15)
+evaluate_algorithm(URM_test, icfRecommender, at=10)
 
 # Let's generate recommendations for the target playlists
 
@@ -134,7 +135,7 @@ for line in target_playlist_file:
     line = line.replace("\n", "")
     try:
         playlist_id = int(line)
-        target_playlist_tuples.append((playlist_id, list(cbfrecommender.recommend(playlist_id))))
+        target_playlist_tuples.append((playlist_id, list(icfRecommender.recommend(playlist_id))))
     except ValueError:
         pass
 

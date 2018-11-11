@@ -151,7 +151,6 @@ class BPR_Sampling(object):
 
 
     def sampleBatch(self):
-        print(self.eligibleUsers.size)
         user_id_list = np.random.choice(self.eligibleUsers, size=(self.batch_size))
         pos_item_id_list = [None]*self.batch_size
         neg_item_id_list = [None]*self.batch_size
@@ -172,6 +171,13 @@ class BPR_Sampling(object):
                     negItemSelected = True
                     neg_item_id_list[sample_index] = neg_item_id
 
+        print("SAMPLE BATCH")
+        print("User id list")
+        print(user_id_list)
+        print("pos item id list")
+        print(pos_item_id_list)
+        print("neg item id list")
+        print(neg_item_id_list)
         return user_id_list, pos_item_id_list, neg_item_id_list
 
 def sigmoidFunction(x):
@@ -215,7 +221,6 @@ class SLIM_BPR_Python(BPR_Sampling):
         self.URM_mask = self.URM_train.copy()
 
         self.URM_mask.data = self.URM_mask.data >= self.positive_threshold
-        self.URM_mask.eliminate_zeros()
 
     def check_matrix(X, format='csc', dtype=np.float32):
         if format == 'csc' and not isinstance(X, sps.csc_matrix):
@@ -611,7 +616,10 @@ class SLIM_BPR_Python(BPR_Sampling):
     def recommend(self, playlist_id, at=10, exclude_duplicates=True):
         # compute the scores using the dot product
         playlist_profile = self.URM_train[playlist_id]
-        scores = playlist_profile.dot(self.W_sparse).toarray().ravel()
+        user_ratings = self.URM_train[self.URM_train.indptr[playlist_id]:self.URM_train.indptr[playlist_id + 1]]
+
+        relevant_weights = self.W[playlist_profile]
+        scores = relevant_weights.T.dot(user_ratings)
         if exclude_duplicates:
             scores = self.filter_seen(playlist_id, scores)
 
@@ -633,13 +641,12 @@ class SLIM_BPR_Python(BPR_Sampling):
 
 # MARK: - Train and evaluate algorithm
 
-logFile = open("Result_log.txt", "a")
 slimbprrecommendertest = SLIM_BPR_Python(URM_train, positive_threshold=0, sparse_weights=True)
-slimbprrecommendertest.fit(epochs=2, validate_every_N_epochs=1, URM_test=URM_test, logFile=logFile, batch_size=1, learning_rate=1e-4)
+slimbprrecommendertest.fit(epochs=2,topK=200)
 evaluate_algorithm(URM_test, slimbprrecommendertest)
 
 slimbprrecommender = SLIM_BPR_Python(URM_test, positive_threshold=0, sparse_weights=True)
-slimbprrecommender.fit(epochs=2, validate_every_N_epochs=1, URM_test=URM_test, logFile=logFile, batch_size=1, learning_rate=1e-4)
+slimbprrecommender.fit(epochs=2,topK=200)
 
 # Let's generate recommendations for the target playlists
 

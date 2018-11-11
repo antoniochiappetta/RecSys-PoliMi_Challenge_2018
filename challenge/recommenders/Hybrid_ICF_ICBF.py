@@ -13,7 +13,7 @@ from code_recsys.challenge.support_files.evaluate_function import evaluate_algor
 from code_recsys.challenge.support_files.data_splitter import train_test_holdout_adjusted
 from code_recsys.challenge.support_files.compute_similarity import Compute_Similarity_Python
 
-# LOAD INTERACTION DATA
+# MARK: - Load interaction data
 
 print("MARK: - Load interaction data")
 
@@ -26,6 +26,7 @@ for _ in URM_file:
     numberInteractions += 1
 
 print("The number of interactions is {}".format(numberInteractions))
+
 
 def rowSplitTrain(rowString):
     split = rowString.split(",")
@@ -67,7 +68,7 @@ print(playlist_list_unique[0:10])
 print(track_list_unique[0:10])
 
 URM_all = sps.coo_matrix((rating_list, (playlist_list, track_list)))
-URM_train, URM_test = train_test_holdout(URM_all)
+URM_train, URM_test = train_test_holdout_adjusted(URM_all)
 
 print("URM_train len")
 print(len(URM_train.indices))
@@ -75,7 +76,7 @@ print(len(URM_train.indices))
 print("URM_test len")
 print(len(URM_test.indices))
 
-# LOAD CONTENT DATA
+# MARK: - Load content data
 
 print("MARK: - Load Content Data")
 
@@ -138,33 +139,32 @@ print(ICM_album[0])
 print(ICM_artist[0])
 print(ICM_duration[0])
 
-# MARK: - Data splitting
-
-ICM_album_train, ICM_album_test = train_test_holdout_adjusted(ICM_album)
-ICM_artist_train, ICM_artist_test = train_test_holdout_adjusted(ICM_artist)
-ICM_duration_train, ICM_duration_test = train_test_holdout_adjusted(ICM_duration)
-
 # MARK: - Recommender
 
-class ItemCBFKNNRecommender(object):
+class Hybrid_CF_CBF_KNNRecommender(object):
 
-    def __init__(self, URM, ICM_album, ICM_artist, ICM_duration):
+    def __init__(self, URM, URM_all, ICM_album, ICM_artist, ICM_duration):
         self.URM = URM
+        self.URM_all = URM_all
         self.ICM_album = ICM_album
         self.ICM_artist = ICM_artist
         self.ICM_duration = ICM_duration
 
     def fit(self, topK=50, shrink=100, normalize=True, similarity="cosine"):
+        similarity_object_track = Compute_Similarity_Python(self.URM_all, shrink=shrink, topK=topK, normalize=normalize,
+                                                            similarity=similarity)
+
         similarity_object_album = Compute_Similarity_Python(self.ICM_album.T, shrink=shrink, topK=topK, normalize=normalize, similarity=similarity)
         similarity_object_artist = Compute_Similarity_Python(self.ICM_artist.T, shrink=shrink, topK=topK,
                                                             normalize=normalize, similarity=similarity)
         similarity_object_duration = Compute_Similarity_Python(self.ICM_duration.T, shrink=shrink, topK=topK,
                                                             normalize=normalize, similarity=similarity)
 
+        self.W_sparse_track = similarity_object_track.compute_similarity()
         self.W_sparse_album = similarity_object_album.compute_similarity()
         self.W_sparse_artist = similarity_object_artist.compute_similarity()
         self.W_sparse_duration = similarity_object_duration.compute_similarity()
-        self.W_sparse = self.W_sparse_album * 0.2 + self.W_sparse_artist * 0.8 + self.W_sparse_duration * 0.0
+        self.W_sparse = self.W_sparse_track * 0.6 + self.W_sparse_album * 0.1 + self.W_sparse_artist * 0.3 + self.W_sparse_duration * 0.0
 
     def recommend(self, playlist_id, at=10, exclude_duplicates=True):
         # compute the scores using the dot product
@@ -180,7 +180,7 @@ class ItemCBFKNNRecommender(object):
 
     def filter_seen(self, playlist_id, scores):
         start_pos = self.URM.indptr[playlist_id]
-        end_pos = self.URM.indptr[playlist_id+1]
+        end_pos = self.URM.indptr[playlist_id + 1]
 
         playlist_profile = self.URM.indices[start_pos:end_pos]
 
@@ -188,11 +188,15 @@ class ItemCBFKNNRecommender(object):
 
         return scores
 
+
 # MARK: - Train and evaluate algorithm
 
-cbfrecommender = ItemCBFKNNRecommender(URM_train, ICM_album, ICM_artist, ICM_duration)
-cbfrecommender.fit()
-evaluate_algorithm(URM_test, cbfrecommender)
+hybrid_cf_cbf_recommendertest = Hybrid_CF_CBF_KNNRecommender(URM_train, URM_all, ICM_album, ICM_artist, ICM_duration)
+hybrid_cf_cbf_recommendertest.fit(shrink=3, topK=200)
+evaluate_algorithm(URM_test, hybrid_cf_cbf_recommendertest, at=10)
+
+hybrid_cf_cbf_recommender = Hybrid_CF_CBF_KNNRecommender(URM_test, URM_all, ICM_album, ICM_artist, ICM_duration)
+hybrid_cf_cbf_recommender.fit(shrink=3,topK=200)
 
 # Let's generate recommendations for the target playlists
 
@@ -208,7 +212,7 @@ for line in target_playlist_file:
     line = line.replace("\n", "")
     try:
         playlist_id = int(line)
-        target_playlist_tuples.append((playlist_id, list(cbfrecommender.recommend(playlist_id))))
+        target_playlist_tuples.append((playlist_id, list(hybrid_cf_cbf_recommender.recommend(playlist_id))))
     except ValueError:
         pass
 
@@ -219,7 +223,7 @@ def get_description_from_recommendation(tuple):
     return "{},{}\n".format(playlist_string, tracks_string)
 
 
-submission_path = "../input/submission.csv"
+submission_path = "submission.csv"
 submission_file = open(submission_path, 'w')
 submission_file.write("playlist_id,track_ids\n")
 for recommendation in target_playlist_tuples:
@@ -227,5 +231,3 @@ for recommendation in target_playlist_tuples:
     numberOfTargets += 1
 submission_file.close()
 print(numberOfTargets)
-
-

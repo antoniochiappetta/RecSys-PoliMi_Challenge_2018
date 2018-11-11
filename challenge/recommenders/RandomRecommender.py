@@ -3,12 +3,12 @@ import scipy.sparse as sps
 import sys
 sys.path.insert(0, 'code/challenge/support_files')
 
-from code.challenge.support_files.evaluate_function import evaluate_algorithm
-from code.challenge.support_files.data_splitter import train_test_holdout
+from code_recsys.challenge.support_files.evaluate_function import evaluate_algorithm
+from code_recsys.challenge.support_files.data_splitter import train_test_holdout
 
 # IMPORT DATA AND SPLIT IN TRAIN AND TEST SET
 
-URM_path = "../input data and submission/train.csv"
+URM_path = "../input/train.csv"
 URM_file = open(URM_path, 'r')
 URM_file.seek(0)
 numberInteractions = 0
@@ -87,7 +87,7 @@ evaluate_algorithm(URM_test, randomRecommender)
 
 print("Generating recommendations...")
 
-target_playlist_path = "../input data and submission/target_playlists.csv"
+target_playlist_path = "../input/target_playlists.csv"
 target_playlist_file = open(target_playlist_path, 'r')
 target_playlist_file.seek(0)
 target_playlist_tuples = []
@@ -108,7 +108,7 @@ def get_description_from_recommendation(tuple):
     return "{},{}\n".format(playlist_string, tracks_string)
 
 
-submission_path = "../input data and submission/submission.csv"
+submission_path = "../input/submission.csv"
 submission_file = open(submission_path, 'w')
 submission_file.write("playlist_id,track_ids\n")
 for recommendation in target_playlist_tuples:

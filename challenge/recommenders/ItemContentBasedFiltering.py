@@ -138,12 +138,6 @@ print(ICM_album[0])
 print(ICM_artist[0])
 print(ICM_duration[0])
 
-# MARK: - Data splitting
-
-ICM_album_train, ICM_album_test = train_test_holdout_adjusted(ICM_album)
-ICM_artist_train, ICM_artist_test = train_test_holdout_adjusted(ICM_artist)
-ICM_duration_train, ICM_duration_test = train_test_holdout_adjusted(ICM_duration)
-
 # MARK: - Recommender
 
 class ItemCBFKNNRecommender(object):
